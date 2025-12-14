@@ -2,6 +2,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use embedded_graphics::examples;
+use embedded_graphics::primitives::{PrimitiveStyle, StyledDrawable};
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::hal::prelude::*;
 use esp_idf_svc::hal::i2c::{I2cConfig, I2cDriver};
@@ -161,11 +163,17 @@ fn run_app() -> anyhow::Result<()> {
     }
 }
 
+// Screen size is 128x64
+
 fn draw_count<D>(display: &mut D, count: u32) 
 where D: DrawTarget<Color = BinaryColor> {
     let _ = display.clear(BinaryColor::Off);
+
+    let _ = embedded_graphics::primitives::Circle::new(Point::new(128-32, 0), 32)
+    .into_styled(PrimitiveStyle::with_fill(BinaryColor::On))
+    .draw(display); 
     
-    let text_style = MonoTextStyleBuilder::new()
+    let text_style: embedded_graphics::mono_font::MonoTextStyle<'_, BinaryColor> = MonoTextStyleBuilder::new()
         .font(&FONT_6X10)
         .text_color(BinaryColor::On)
         .build();
