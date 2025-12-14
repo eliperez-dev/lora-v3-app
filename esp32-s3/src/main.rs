@@ -94,17 +94,6 @@ fn run_app() -> anyhow::Result<()> {
     
     display.init().unwrap();
 
-    // Debug: Flash screen
-    for _ in 0..5 {
-        display.clear(BinaryColor::On).unwrap();
-        display.flush().unwrap();
-        thread::sleep(Duration::from_millis(200));
-        
-        display.clear(BinaryColor::Off).unwrap();
-        display.flush().unwrap();
-        thread::sleep(Duration::from_millis(200));
-    }
-
     // Initial draw
     draw_count(&mut display, 0);
     display.flush().unwrap();
@@ -146,6 +135,24 @@ fn run_app() -> anyhow::Result<()> {
         Ok(())
     })?;
 
+    let counter_sub = counter.clone();
+    let display_sub = display.clone();
+    server.fn_handler("/sub", Method::Post, move |request| -> anyhow::Result<()> {
+        let mut count = counter_sub.lock().unwrap();
+        *count -= 1;
+        
+        // Update Display
+        if let Ok(mut disp) = display_sub.lock() {
+            draw_count(&mut *disp, *count);
+            let _ = disp.flush();
+        }
+
+        let html = format!("Added. New count: {}", *count);
+        let mut response = request.into_response(200, Some("OK"), &[("Access-Control-Allow-Origin", "*")])?;
+        response.write(html.as_bytes())?;
+        Ok(())
+    })?;
+
     log::info!("Server running...");
 
     // Keep the main thread alive
@@ -169,14 +176,5 @@ where D: DrawTarget<Color = BinaryColor> {
     let count_str = format!("{}", count);
     let _ = Text::with_baseline(&count_str, Point::new(0, 20), text_style, Baseline::Top)
         .draw(display);
-
-    // display.flush() is not part of DrawTarget, it's specific to the display driver.
-    // Since we are using BufferedGraphicsMode, we need to flush.
-    // However, we can't easily bound D to have flush() without complex trait bounds.
-    // For now, we will rely on the fact that we are passing the specific type in main,
-    // but here we are generic.
-    //
-    // To fix this properly, we should probably not make this function generic 
-    // or use a trait that includes flush.
 }
  

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
-\\
-  let espIp = $state("192.168.1.50");
+
+  let espIp = $state("192.168.0.223");
   let count = $state("0");
   let status = $state("");
 
@@ -32,23 +32,25 @@
       status = "Error: " + String(e);
     }
   }
+
+  async function decrement() {
+    status = "Decrementing...";
+    try {
+      const response = await fetch(`http://${espIp}/sub`, { method: 'POST' });
+      if (!response.ok) throw new Error(`Failed to connect: ${response.statusText}`);
+      // Response is "Added. New count: X"
+      await getCount();
+      status = "Decremented";
+    } catch (e) {
+      console.error(e);
+      status = "Error: " + String(e);
+    }
+  }
 </script>
 
 <main class="container">
   <h1>ESP32 Control</h1>
-
-  <div class="row">
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
-  </div>
-  <p>Enter your ESP32 IP address below to control the counter.</p>
+  <h3>Enter your ESP32 IP address below to control the counter.</h3>
 
   <div class="row">
     <input id="ip-input" placeholder="ESP32 IP Address" bind:value={espIp} />
@@ -58,6 +60,7 @@
   <div class="counter-section">
     <h2>Count: {count}</h2>
     <button onclick={increment}>+ Increment</button>
+    <button onclick={decrement}>- Decrement</button>
   </div>
   
   <p class="status">{status}</p>
@@ -80,15 +83,6 @@
 #ip-input {
   margin-right: 5px;
   width: 200px;
-}
-
-/* Keep existing styles below */
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.svelte-kit:hover {
-  filter: drop-shadow(0 0 2em #ff3e00);
 }
 
 :root {
@@ -175,10 +169,6 @@ button:active {
 input,
 button {
   outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
 }
 
 @media (prefers-color-scheme: dark) {
