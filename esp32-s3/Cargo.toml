@@ -24,11 +24,12 @@ experimental = ["esp-idf-svc/experimental"]
 
 [dependencies]
 log = "0.4"
-esp-idf-svc = "0.51"
+esp-idf-svc = { version = "0.51", features = ["critical-section"] }
 anyhow = "1.0"
 ssd1306 = "0.9"
 embedded-graphics = "0.8"
 embedded-hal = "1.0"
+sx126x = "0.3.0"
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }
