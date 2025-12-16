@@ -95,10 +95,15 @@ fn run_app() -> anyhow::Result<()> {
     // Wait for connection
     while !wifi.is_up()? {
         let config = wifi.get_configuration()?;
+
         log::info!("Waiting for station {:?}", config);
         thread::sleep(Duration::from_millis(1000));
     }
     log::info!("Wifi connected!");
+
+    let ip_info = wifi.sta_netif().get_ip_info()?;
+    let ip = ip_info.ip;
+    log::info!("IP Address: {}", ip); 
 
 
     // 2.5 Setup LoRa (Heltec V3)
@@ -172,7 +177,7 @@ fn run_app() -> anyhow::Result<()> {
     log::info!("LoRa initialized!");
 
     // Initial draw
-    draw_count(&mut display, 0);
+    draw_count(&mut display, 0, &ip);
     display.flush().unwrap();
 
 
@@ -205,7 +210,7 @@ fn run_app() -> anyhow::Result<()> {
                                             if let Ok(mut count) = counter_rx.lock() {
                                                 *count = new_count;
                                                 if let Ok(mut disp) = display_rx.lock() {
-                                                    draw_count(&mut *disp, *count);
+                                                    draw_count(&mut *disp, *count, &ip);
                                                     let _ = disp.flush();
                                                 }
                                             }
@@ -250,7 +255,7 @@ fn run_app() -> anyhow::Result<()> {
         
         // Update Display
         if let Ok(mut disp) = display_add.lock() {
-            draw_count(&mut *disp, *count);
+            draw_count(&mut *disp, *count, &ip);
             let _ = disp.flush();
         }
 
@@ -293,7 +298,7 @@ fn run_app() -> anyhow::Result<()> {
         
         // Update Display
         if let Ok(mut disp) = display_sub.lock() {
-            draw_count(&mut *disp, *count);
+            draw_count(&mut *disp, *count, &ip);
             let _ = disp.flush();
         }
 
@@ -337,7 +342,7 @@ fn run_app() -> anyhow::Result<()> {
 
 // Screen size is 128x64
 
-fn draw_count<D>(display: &mut D, count: u32) 
+fn draw_count<D>(display: &mut D, count: u32, ip: &esp_idf_svc::ipv4::Ipv4Addr) 
 where D: DrawTarget<Color = BinaryColor> {
     let _ = display.clear(BinaryColor::Off);
 
@@ -350,11 +355,10 @@ where D: DrawTarget<Color = BinaryColor> {
         .text_color(BinaryColor::On)
         .build();
 
-    let _ = Text::with_baseline("Counter:", Point::new(0, 0), text_style, Baseline::Top)
+    let _ = Text::with_baseline(&format!("Counter: {}", count), Point::new(0, 0), text_style, Baseline::Top)
         .draw(display);
 
-    let count_str = format!("{}", count);
-    let _ = Text::with_baseline(&count_str, Point::new(0, 20), text_style, Baseline::Top)
+    let _ = Text::with_baseline(&format!("{:?}", ip), Point::new(0, 55), text_style, Baseline::Top)
         .draw(display);
 }
 
